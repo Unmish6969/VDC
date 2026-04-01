@@ -6,7 +6,8 @@ const rowSchema = new mongoose.Schema(
     valueA:      { type: Number, default: 0 },
     valueB:      { type: Number, default: 0 },
     formula:     { type: String, default: '' },
-    // result is intentionally NOT stored — computed on the frontend only
+    result:      { type: mongoose.Schema.Types.Mixed, default: null },
+    // result is computed on frontend and saved only when user clicks Submit
   },
   { timestamps: true }
 );

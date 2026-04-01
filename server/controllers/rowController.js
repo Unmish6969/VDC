@@ -28,10 +28,10 @@ const createRow = async (req, res, next) => {
 // PUT /api/rows/:id — persist raw input fields only (debounced from frontend)
 const updateRow = async (req, res, next) => {
   try {
-    const { description, valueA, valueB, formula } = req.body;
+    const { description, valueA, valueB, formula, result } = req.body;
     const row = await Row.findByIdAndUpdate(
       req.params.id,
-      { description, valueA, valueB, formula },
+      { description, valueA, valueB, formula, result },
       { new: true, runValidators: true }
     );
     if (!row) {

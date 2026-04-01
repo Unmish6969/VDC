@@ -49,6 +49,7 @@ function FormulaTable() {
             valueA:      row.valueA,
             valueB:      row.valueB,
             formula:     row.formula,
+            result:      row.result ?? null,
           })
         )
       );
