@@ -1,14 +1,44 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import { useDispatch } from 'react-redux';
+import axios from 'axios';
+import { updateRow } from '../store/rowsSlice';
 import ResultCell from './ResultCell';
 
-function FormulaRow({ row, onChange, onDelete }) {
+function FormulaRow({ row, onDelete }) {
+  const dispatch = useDispatch();
+  // Keep a ref to the latest row so the debounce timer always sends fresh data
+  const rowRef = useRef(row);
+  rowRef.current = row;
+
+  const debounceTimer = useRef(null);
+
   const handleChange = (field) => (e) => {
-    const val =
+    const raw = e.target.value;
+    const value =
       field === 'valueA' || field === 'valueB'
-        ? e.target.value === '' ? '' : parseFloat(e.target.value)
-        : e.target.value;
-    onChange(row._id, field, val);
+        ? raw === '' ? '' : parseFloat(raw)
+        : raw;
+
+    // 1. Dispatch to Redux immediately → result recomputed in slice
+    dispatch(updateRow({ id: row._id, field, value }));
+
+    // 2. Debounce the PUT to backend (500ms after last keystroke)
+    clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      const r = rowRef.current;
+      axios
+        .put(`/api/rows/${r._id}`, {
+          description: r.description,
+          valueA:      r.valueA,
+          valueB:      r.valueB,
+          formula:     r.formula,
+        })
+        .catch((err) => console.error('PUT failed:', err));
+    }, 500);
   };
+
+  // Cleanup timer on unmount
+  useEffect(() => () => clearTimeout(debounceTimer.current), []);
 
   return (
     <tr className="formula-row">
@@ -49,7 +79,7 @@ function FormulaRow({ row, onChange, onDelete }) {
         />
       </td>
       <td className="result-td">
-        <ResultCell localResult={row._localResult} serverResult={row.result} />
+        <ResultCell result={row.result} />
       </td>
       <td>
         <button

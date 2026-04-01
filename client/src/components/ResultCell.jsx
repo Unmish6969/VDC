@@ -1,31 +1,23 @@
 import React from 'react';
 
-function ResultCell({ localResult, serverResult }) {
-  // Prefer local (instant) result, fall back to server-persisted result
-  let display = '';
-  let isError = false;
-
-  if (localResult !== undefined) {
-    if (localResult.error === '') {
-      // Empty formula — show placeholder
-      display = '—';
-      isError = false;
-    } else if (localResult.error) {
-      display = localResult.error;
-      isError = true;
-    } else if (localResult.value !== undefined) {
-      // Format number nicely
-      display = Number.isInteger(localResult.value)
-        ? localResult.value
-        : parseFloat(localResult.value.toFixed(10));
-      isError = false;
-    }
-  } else if (serverResult !== null && serverResult !== undefined) {
-    display = serverResult;
-    isError = typeof serverResult === 'string';
-  } else {
-    display = '—';
+/**
+ * Read-only result display.
+ * result: number → green pill
+ * result: string → red pill (error message)
+ * result: null/undefined → em dash
+ */
+function ResultCell({ result }) {
+  // Empty string = empty formula (silent state), treat same as null
+  if (result === null || result === undefined || result === '') {
+    return <span className="result-cell">—</span>;
   }
+
+  const isError = typeof result === 'string';
+  const display = isError
+    ? result
+    : typeof result === 'number'
+      ? (Number.isInteger(result) ? result : parseFloat(result.toFixed(10)))
+      : result;
 
   return (
     <span className={`result-cell ${isError ? 'result-error' : 'result-ok'}`}>

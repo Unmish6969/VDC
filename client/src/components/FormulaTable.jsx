@@ -1,9 +1,38 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import axios from 'axios';
+import { setRows, addRow, deleteRow } from '../store/rowsSlice';
 import FormulaRow from './FormulaRow';
-import { useRows } from '../hooks/useRows';
 
 function FormulaTable() {
-  const { rows, handleAddRow, handleDeleteRow, handleRowChange } = useRows();
+  const dispatch = useDispatch();
+  const rows = useSelector((state) => state.rows);
+
+  // Fetch all rows ONCE on mount
+  useEffect(() => {
+    axios
+      .get('/api/rows')
+      .then((res) => dispatch(setRows(res.data)))
+      .catch((err) => console.error('Failed to load rows:', err));
+  }, [dispatch]);
+
+  const handleAddRow = async () => {
+    try {
+      const res = await axios.post('/api/rows');
+      dispatch(addRow(res.data));
+    } catch (err) {
+      console.error('Failed to add row:', err);
+    }
+  };
+
+  const handleDeleteRow = async (id) => {
+    try {
+      await axios.delete(`/api/rows/${id}`);
+      dispatch(deleteRow(id));
+    } catch (err) {
+      console.error('Failed to delete row:', err);
+    }
+  };
 
   return (
     <div className="table-wrapper">
@@ -31,7 +60,6 @@ function FormulaTable() {
               <FormulaRow
                 key={row._id}
                 row={row}
-                onChange={handleRowChange}
                 onDelete={handleDeleteRow}
               />
             ))}
