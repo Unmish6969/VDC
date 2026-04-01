@@ -6,7 +6,7 @@ const rowSchema = new mongoose.Schema(
     valueA:      { type: Number, default: 0 },
     valueB:      { type: Number, default: 0 },
     formula:     { type: String, default: '' },
-    result:      { type: mongoose.Schema.Types.Mixed, default: null },
+    // result is intentionally NOT stored — computed on the frontend only
   },
   { timestamps: true }
 );

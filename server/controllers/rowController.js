@@ -1,6 +1,6 @@
 const Row = require('../models/Row');
 
-// GET /api/rows — fetch all rows
+// GET /api/rows — fetch all rows (called once on page load)
 const getRows = async (req, res, next) => {
   try {
     const rows = await Row.find().sort({ createdAt: 1 });
@@ -18,7 +18,6 @@ const createRow = async (req, res, next) => {
       valueA:      req.body.valueA      ?? 0,
       valueB:      req.body.valueB      ?? 0,
       formula:     req.body.formula     || '',
-      result:      null,
     });
     res.status(201).json(row);
   } catch (err) {
@@ -26,41 +25,21 @@ const createRow = async (req, res, next) => {
   }
 };
 
-// POST /api/evaluate — evaluate formula and persist result
-const evaluateRow = async (req, res, next) => {
+// PUT /api/rows/:id — persist raw input fields only (debounced from frontend)
+const updateRow = async (req, res, next) => {
   try {
-    const { id, valueA, valueB, formula } = req.body;
-
-    let result;
-    try {
-      // eslint-disable-next-line no-new-func
-      const val = new Function('A', 'B', 'return ' + formula)(
-        parseFloat(valueA),
-        parseFloat(valueB)
-      );
-      if (!isFinite(val)) {
-        result = 'Result is not finite';
-      } else {
-        result = val;
-      }
-    } catch {
-      result = 'Invalid formula';
+    const { description, valueA, valueB, formula } = req.body;
+    const row = await Row.findByIdAndUpdate(
+      req.params.id,
+      { description, valueA, valueB, formula },
+      { new: true, runValidators: true }
+    );
+    if (!row) {
+      const err = new Error('Row not found');
+      err.status = 404;
+      return next(err);
     }
-
-    // Persist updated result to MongoDB
-    if (id) {
-      await Row.findByIdAndUpdate(id, {
-        valueA: parseFloat(valueA),
-        valueB: parseFloat(valueB),
-        formula,
-        result,
-      });
-    }
-
-    if (typeof result === 'string') {
-      return res.json({ error: result });
-    }
-    res.json({ result });
+    res.json(row);
   } catch (err) {
     next(err);
   }
@@ -76,4 +55,4 @@ const deleteRow = async (req, res, next) => {
   }
 };
 
-module.exports = { getRows, createRow, evaluateRow, deleteRow };
+module.exports = { getRows, createRow, updateRow, deleteRow };
