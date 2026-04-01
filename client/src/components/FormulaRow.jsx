@@ -1,16 +1,10 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { useDispatch } from 'react-redux';
-import axios from 'axios';
 import { updateRow } from '../store/rowsSlice';
 import ResultCell from './ResultCell';
 
 function FormulaRow({ row, onDelete }) {
   const dispatch = useDispatch();
-  // Keep a ref to the latest row so the debounce timer always sends fresh data
-  const rowRef = useRef(row);
-  rowRef.current = row;
-
-  const debounceTimer = useRef(null);
 
   const handleChange = (field) => (e) => {
     const raw = e.target.value;
@@ -19,26 +13,9 @@ function FormulaRow({ row, onDelete }) {
         ? raw === '' ? '' : parseFloat(raw)
         : raw;
 
-    // 1. Dispatch to Redux immediately → result recomputed in slice
+    // Update Redux immediately → result recomputed in slice, no API call
     dispatch(updateRow({ id: row._id, field, value }));
-
-    // 2. Debounce the PUT to backend (500ms after last keystroke)
-    clearTimeout(debounceTimer.current);
-    debounceTimer.current = setTimeout(() => {
-      const r = rowRef.current;
-      axios
-        .put(`/api/rows/${r._id}`, {
-          description: r.description,
-          valueA:      r.valueA,
-          valueB:      r.valueB,
-          formula:     r.formula,
-        })
-        .catch((err) => console.error('PUT failed:', err));
-    }, 500);
   };
-
-  // Cleanup timer on unmount
-  useEffect(() => () => clearTimeout(debounceTimer.current), []);
 
   return (
     <tr className="formula-row">

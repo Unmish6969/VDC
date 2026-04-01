@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import axios from 'axios';
 import { setRows, addRow, deleteRow } from '../store/rowsSlice';
@@ -7,6 +7,8 @@ import FormulaRow from './FormulaRow';
 function FormulaTable() {
   const dispatch = useDispatch();
   const rows = useSelector((state) => state.rows);
+  const [saving, setSaving] = useState(false);
+  const [savedMsg, setSavedMsg] = useState('');
 
   // Fetch all rows ONCE on mount
   useEffect(() => {
@@ -31,6 +33,32 @@ function FormulaTable() {
       dispatch(deleteRow(id));
     } catch (err) {
       console.error('Failed to delete row:', err);
+    }
+  };
+
+  // Save all rows to DB on Submit click
+  const handleSubmit = async () => {
+    if (rows.length === 0) return;
+    setSaving(true);
+    setSavedMsg('');
+    try {
+      await Promise.all(
+        rows.map((row) =>
+          axios.put(`/api/rows/${row._id}`, {
+            description: row.description,
+            valueA:      row.valueA,
+            valueB:      row.valueB,
+            formula:     row.formula,
+          })
+        )
+      );
+      setSavedMsg('✓ Saved');
+      setTimeout(() => setSavedMsg(''), 2500);
+    } catch (err) {
+      console.error('Submit failed:', err);
+      setSavedMsg('✗ Save failed');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -66,9 +94,21 @@ function FormulaTable() {
           </tbody>
         </table>
       </div>
-      <button className="add-btn" onClick={handleAddRow}>
-        <span className="add-icon">+</span> Add Row
-      </button>
+      <div className="table-actions">
+        <button className="add-btn" onClick={handleAddRow}>
+          <span className="add-icon">+</span> Add Row
+        </button>
+        <div className="submit-area">
+          {savedMsg && <span className="saved-msg">{savedMsg}</span>}
+          <button
+            className="submit-btn"
+            onClick={handleSubmit}
+            disabled={saving || rows.length === 0}
+          >
+            {saving ? 'Saving…' : '💾 Submit'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
